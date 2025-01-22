@@ -9,10 +9,10 @@
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
-            background-color: #f4f4f9;
+            background-color: #f0ead2;
         }
         header {
-            background-color: #6200ea;
+            background-color: #adc178;
             color: white;
             padding: 20px;
             text-align: center;
@@ -26,7 +26,7 @@
         .name-link {
             display: block;
             margin: 10px 0;
-            color: #6200ea;
+            color: #a98467;
             text-decoration: none;
         }
         .name-link:hover {
@@ -46,15 +46,18 @@
             margin: 5px 0;
         }
         button {
-            background-color: #6200ea;
-            color: white;
+            background-color: #dde5b6;
+            color: #a98467;
             border: none;
             cursor: pointer;
         }
         button:hover {
-            background-color: #3700b3;
+            background-color: #adc178;
+            color: white;
         }
     </style>
+    <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-database.js"></script>
 </head>
 <body>
     <header>
@@ -66,13 +69,13 @@
             <form id="reviewForm">
                 <div class="form-group">
                     <label for="selectName">Select a Name</label>
-                    <select id="selectName">
+                    <select id="selectName" onchange="toggleNewNameInput()">
                         <option value="">-- Select a Name --</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label for="newName">Or Add a New Name</label>
-                    <input type="text" id="newName" placeholder="Enter new name">
+                    <input type="text" id="newName" placeholder="Enter new name" oninput="toggleSelectName()">
                 </div>
                 <div class="form-group">
                     <label for="reviewText">Review</label>
@@ -99,7 +102,22 @@
     </main>
 
     <script>
-        const names = {};
+        // Firebase configuration
+        const firebaseConfig = {
+  apiKey: "AIzaSyCQqwXxiPJm0BzzLDPD9u93Ijzk20ap_CY",
+  authDomain: "friendreview-b41c8.firebaseapp.com",
+  databaseURL: "https://friendreview-b41c8-default-rtdb.firebaseio.com",
+  projectId: "friendreview-b41c8",
+  storageBucket: "friendreview-b41c8.firebasestorage.app",
+  messagingSenderId: "367219434697",
+  appId: "1:367219434697:web:141b701c3de9e8ca2f9918",
+  measurementId: "G-B29GGVRPW1"
+};
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
         const reviewForm = document.getElementById('reviewForm');
         const nameLinks = document.getElementById('nameLinks');
         const selectName = document.getElementById('selectName');
@@ -112,32 +130,53 @@
         const currentNameSpan = document.getElementById('currentName');
 
         function updateNameList() {
-            nameLinks.innerHTML = '';
-            selectName.innerHTML = '<option value="">-- Select a Name --</option>';
+            db.ref('names').once('value').then(snapshot => {
+                const names = snapshot.val() || {};
+                nameLinks.innerHTML = '';
+                selectName.innerHTML = '<option value="">-- Select a Name --</option>';
 
-            for (const name in names) {
-                const link = document.createElement('a');
-                link.textContent = name;
-                link.href = '#';
-                link.classList.add('name-link');
-                link.addEventListener('click', () => showReviews(name));
-                nameLinks.appendChild(link);
+                for (const name in names) {
+                    const link = document.createElement('a');
+                    link.textContent = name;
+                    link.href = '#';
+                    link.classList.add('name-link');
+                    link.addEventListener('click', () => showReviews(name, names[name]));
+                    nameLinks.appendChild(link);
 
-                const option = document.createElement('option');
-                option.value = name;
-                option.textContent = name;
-                selectName.appendChild(option);
+                    const option = document.createElement('option');
+                    option.value = name;
+                    option.textContent = name;
+                    selectName.appendChild(option);
+                }
+            });
+        }
+
+        function toggleNewNameInput() {
+            if (selectName.value) {
+                newNameInput.disabled = true;
+                newNameInput.value = '';
+            } else {
+                newNameInput.disabled = false;
             }
         }
 
-        function showReviews(name) {
+        function toggleSelectName() {
+            if (newNameInput.value.trim()) {
+                selectName.disabled = true;
+                selectName.value = '';
+            } else {
+                selectName.disabled = false;
+            }
+        }
+
+        function showReviews(name, reviews) {
             reviewBoard.style.display = 'block';
             reviewForm.style.display = 'none';
             reviewBoard.scrollIntoView();
             currentNameSpan.textContent = name;
             reviewsDiv.innerHTML = '';
 
-            (names[name] || []).forEach(review => {
+            (reviews || []).forEach(review => {
                 const div = document.createElement('div');
                 div.textContent = review;
                 reviewsDiv.appendChild(div);
@@ -148,6 +187,8 @@
             newNameInput.value = '';
             reviewText.value = '';
             selectName.value = '';
+            toggleNewNameInput();
+            toggleSelectName();
         }
 
         backButton.addEventListener('click', () => {
@@ -172,14 +213,15 @@
 
             const nameToUse = newName || selectedName;
 
-            if (!names[nameToUse]) {
-                names[nameToUse] = [];
-            }
-
-            names[nameToUse].push(review);
-            updateNameList();
-            resetForm();
-            alert('Review added!');
+            db.ref(`names/${nameToUse}`).once('value').then(snapshot => {
+                const reviews = snapshot.val() || [];
+                reviews.push(review);
+                db.ref(`names/${nameToUse}`).set(reviews).then(() => {
+                    updateNameList();
+                    resetForm();
+                    alert('Review added!');
+                });
+            });
         });
 
         updateNameList();
