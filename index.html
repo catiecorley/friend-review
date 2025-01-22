@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Friend Reviews</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+        }
+        header {
+            background-color: #6200ea;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        main {
+            padding: 20px;
+        }
+        .name-list, .review-form {
+            margin-bottom: 20px;
+        }
+        .name-link {
+            display: block;
+            margin: 10px 0;
+            color: #6200ea;
+            text-decoration: none;
+        }
+        .name-link:hover {
+            text-decoration: underline;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea, select, button {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+        }
+        button {
+            background-color: #6200ea;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #3700b3;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Friend Reviews</h1>
+    </header>
+    <main>
+        <div class="review-form">
+            <h2>Add a Review</h2>
+            <form id="reviewForm">
+                <div class="form-group">
+                    <label for="selectName">Select a Name</label>
+                    <select id="selectName">
+                        <option value="">-- Select a Name --</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="newName">Or Add a New Name</label>
+                    <input type="text" id="newName" placeholder="Enter new name">
+                </div>
+                <div class="form-group">
+                    <label for="reviewText">Review</label>
+                    <textarea id="reviewText" rows="4" placeholder="Write your review here"></textarea>
+                </div>
+                <button type="button" id="submitReview">Submit Review</button>
+            </form>
+        </div>
+
+        <div class="name-list">
+            <h2>People with Reviews</h2>
+            <div id="nameLinks">
+                <!-- Links to people's pages will appear here -->
+            </div>
+        </div>
+
+        <div id="reviewBoard" style="display: none;">
+            <h2>Reviews for <span id="currentName"></span></h2>
+            <div id="reviews">
+                <!-- Reviews will appear here -->
+            </div>
+            <button id="backButton">Back to Main Page</button>
+        </div>
+    </main>
+
+    <script>
+        const names = {};
+        const reviewForm = document.getElementById('reviewForm');
+        const nameLinks = document.getElementById('nameLinks');
+        const selectName = document.getElementById('selectName');
+        const newNameInput = document.getElementById('newName');
+        const reviewText = document.getElementById('reviewText');
+        const submitReview = document.getElementById('submitReview');
+        const reviewBoard = document.getElementById('reviewBoard');
+        const reviewsDiv = document.getElementById('reviews');
+        const backButton = document.getElementById('backButton');
+        const currentNameSpan = document.getElementById('currentName');
+
+        function updateNameList() {
+            nameLinks.innerHTML = '';
+            selectName.innerHTML = '<option value="">-- Select a Name --</option>';
+
+            for (const name in names) {
+                const link = document.createElement('a');
+                link.textContent = name;
+                link.href = '#';
+                link.classList.add('name-link');
+                link.addEventListener('click', () => showReviews(name));
+                nameLinks.appendChild(link);
+
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = name;
+                selectName.appendChild(option);
+            }
+        }
+
+        function showReviews(name) {
+            reviewBoard.style.display = 'block';
+            reviewForm.style.display = 'none';
+            reviewBoard.scrollIntoView();
+            currentNameSpan.textContent = name;
+            reviewsDiv.innerHTML = '';
+
+            (names[name] || []).forEach(review => {
+                const div = document.createElement('div');
+                div.textContent = review;
+                reviewsDiv.appendChild(div);
+            });
+        }
+
+        function resetForm() {
+            newNameInput.value = '';
+            reviewText.value = '';
+            selectName.value = '';
+        }
+
+        backButton.addEventListener('click', () => {
+            reviewBoard.style.display = 'none';
+            reviewForm.style.display = 'block';
+        });
+
+        submitReview.addEventListener('click', () => {
+            const selectedName = selectName.value;
+            const newName = newNameInput.value.trim();
+            const review = reviewText.value.trim();
+
+            if (!selectedName && !newName) {
+                alert('Please select a name or add a new one.');
+                return;
+            }
+
+            if (!review) {
+                alert('Please write a review.');
+                return;
+            }
+
+            const nameToUse = newName || selectedName;
+
+            if (!names[nameToUse]) {
+                names[nameToUse] = [];
+            }
+
+            names[nameToUse].push(review);
+            updateNameList();
+            resetForm();
+            alert('Review added!');
+        });
+
+        updateNameList();
+    </script>
+</body>
+</html>
